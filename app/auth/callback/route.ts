@@ -17,6 +17,27 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${siteUrl}/?error=${encodeURIComponent(error.message)}`)
     }
 
+    // 카카오 프로필 이미지를 profiles 테이블에 저장
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const kakaoProfile = user.user_metadata
+      const profileImageUrl = kakaoProfile?.avatar_url || kakaoProfile?.picture
+      const nickname = kakaoProfile?.name || kakaoProfile?.full_name
+
+      if (profileImageUrl || nickname) {
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            profile_image_url: profileImageUrl,
+            nickname: nickname,
+          }, {
+            onConflict: 'id',
+            ignoreDuplicates: false,
+          })
+      }
+    }
+
     return NextResponse.redirect(`${siteUrl}${next}`)
   }
 

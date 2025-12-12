@@ -1,16 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-
-interface Post {
-  id: string
-  title: string
-  content: string
-  published: boolean
-  created_at: string
-  updated_at: string
-}
+import { getBlogPosts, Post } from '@/lib/api/posts'
 
 interface BlogPostListProps {
   blogId: string
@@ -23,23 +14,11 @@ export default function BlogPostList({ blogId, isOwner }: BlogPostListProps) {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const supabase = createClient()
-
-      let query = supabase
-        .from('posts')
-        .select('*')
-        .eq('blog_id', blogId)
-        .order('created_at', { ascending: false })
-
-      // 소유자가 아니면 published 된 것만
-      if (!isOwner) {
-        query = query.eq('published', true)
-      }
-
-      const { data, error } = await query
-
-      if (!error && data) {
+      try {
+        const data = await getBlogPosts(blogId, isOwner)
         setPosts(data)
+      } catch (err) {
+        console.error('Failed to load posts:', err)
       }
       setLoading(false)
     }
@@ -109,27 +88,40 @@ export default function BlogPostList({ blogId, isOwner }: BlogPostListProps) {
         </span>
       </div>
 
-      <div className="grid grid-cols-2 border-t border-l border-black/10 dark:border-white/10">
+      <div className="divide-y divide-black/10 border-t border-black/10 dark:divide-white/10 dark:border-white/10">
         {posts.map((post) => (
           <a
             key={post.id}
             href={`/post/${post.id}`}
-            className="group flex flex-col border-r border-b border-black/10 p-5 transition-colors hover:bg-black/[0.02] dark:border-white/10 dark:hover:bg-white/[0.02]"
+            className="group block py-5 transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"
           >
-            {!post.published && (
-              <span className="mb-2 w-fit rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-500">
-                비공개
-              </span>
-            )}
-            <h3 className="line-clamp-2 font-semibold text-black group-hover:text-black/80 dark:text-white dark:group-hover:text-white/80">
-              {post.title}
-            </h3>
-            <p className="mt-2 line-clamp-3 flex-1 text-sm text-black/50 dark:text-white/50">
-              {getExcerpt(post.content, 100)}
-            </p>
-            <p className="mt-3 text-xs text-black/40 dark:text-white/40">
-              {formatDate(post.created_at)}
-            </p>
+            <div className="flex items-start gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="truncate font-semibold text-black group-hover:text-black/80 dark:text-white dark:group-hover:text-white/80">
+                    {post.title}
+                  </h3>
+                  {!post.published && (
+                    <span className="shrink-0 rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-500">
+                      비공개
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 line-clamp-2 text-sm text-black/50 dark:text-white/50">
+                  {getExcerpt(post.content, 150)}
+                </p>
+                <p className="mt-2 text-xs text-black/40 dark:text-white/40">
+                  {formatDate(post.created_at)}
+                </p>
+              </div>
+              {post.thumbnail_url && (
+                <img
+                  src={post.thumbnail_url}
+                  alt=""
+                  className="h-20 w-20 shrink-0 rounded-lg object-cover"
+                />
+              )}
+            </div>
           </a>
         ))}
       </div>

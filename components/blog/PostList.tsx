@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getPosts, PostListItem } from '@/lib/api/posts'
 import PostCard from './PostCard'
 
 interface Post {
@@ -25,60 +25,24 @@ export default function PostList() {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const supabase = createClient()
-
-      const { data, error } = await supabase
-        .from('posts')
-        .select(`
-          id,
-          title,
-          content,
-          thumbnail_url,
-          created_at,
-          blog_id
-        `)
-        .eq('published', true)
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      if (error) {
-        console.error('Error fetching posts:', error)
-        setLoading(false)
-        return
+      try {
+        const data = await getPosts(20, 0)
+        // API 응답을 컴포넌트 형식으로 변환
+        const postsWithDetails: Post[] = data.map(post => ({
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          thumbnail_url: post.thumbnail_url,
+          created_at: post.created_at,
+          blogs: post.blog ? {
+            name: post.blog.name,
+            profiles: post.blog.profile,
+          } : null,
+        }))
+        setPosts(postsWithDetails)
+      } catch (err) {
+        console.error('Error fetching posts:', err)
       }
-
-      // 각 포스트의 블로그와 프로필 정보 가져오기
-      const postsWithDetails = await Promise.all(
-        (data || []).map(async (post) => {
-          // 블로그 정보 가져오기
-          const { data: blog } = await supabase
-            .from('blogs')
-            .select('name, user_id')
-            .eq('id', post.blog_id)
-            .single()
-
-          let profiles = null
-          if (blog?.user_id) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('nickname, profile_image_url')
-              .eq('id', blog.user_id)
-              .single()
-            profiles = profile
-          }
-
-          return {
-            id: post.id,
-            title: post.title,
-            content: post.content,
-            thumbnail_url: post.thumbnail_url,
-            created_at: post.created_at,
-            blogs: blog ? { name: blog.name, profiles } : null,
-          }
-        })
-      )
-
-      setPosts(postsWithDetails)
       setLoading(false)
     }
 

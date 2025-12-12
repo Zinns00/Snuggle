@@ -3,6 +3,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { uploadImage } from '@/lib/api/upload'
+import { getBlogPosts, updatePost, deletePost as deletePostApi, Post } from '@/lib/api/posts'
+import { getCategories, createCategory, deleteCategory } from '@/lib/api/categories'
 import type { User } from '@supabase/supabase-js'
 import Toast from '@/components/common/Toast'
 
@@ -20,7 +23,7 @@ interface Category {
   blog_id: string
 }
 
-interface Post {
+interface PostItem {
   id: string
   title: string
   published: boolean
@@ -68,7 +71,7 @@ export default function BlogSettingsPage() {
   const [user, setUser] = useState<User | null>(null)
   const [blog, setBlog] = useState<Blog | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
-  const [posts, setPosts] = useState<Post[]>([])
+  const [posts, setPosts] = useState<PostItem[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('profile')
 
@@ -141,26 +144,25 @@ export default function BlogSettingsPage() {
         setImagePreview(blogData.thumbnail_url)
       }
 
-      // 카테고리 로드
-      const { data: categoryData } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('blog_id', blogId)
-        .order('name')
-
-      if (categoryData) {
+      // 카테고리 로드 (백엔드 API 사용)
+      try {
+        const categoryData = await getCategories(blogId)
         setCategories(categoryData)
+      } catch (err) {
+        console.error('Failed to load categories:', err)
       }
 
-      // 글 목록 로드
-      const { data: postData } = await supabase
-        .from('posts')
-        .select('id, title, published, created_at')
-        .eq('blog_id', blogId)
-        .order('created_at', { ascending: false })
-
-      if (postData) {
-        setPosts(postData)
+      // 글 목록 로드 (백엔드 API 사용)
+      try {
+        const postData = await getBlogPosts(blogId, true)
+        setPosts(postData.map(p => ({
+          id: p.id,
+          title: p.title,
+          published: p.published,
+          created_at: p.created_at,
+        })))
+      } catch (err) {
+        console.error('Failed to load posts:', err)
       }
 
       setLoading(false)
@@ -199,21 +201,12 @@ export default function BlogSettingsPage() {
     }
   }
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (!response.ok) {
+  const handleUploadImage = async (file: File): Promise<string | null> => {
+    const url = await uploadImage(file)
+    if (!url) {
       throw new Error('이미지 업로드에 실패했습니다')
     }
-
-    const data = await response.json()
-    return data.url
+    return url
   }
 
   const handleSaveProfile = async () => {
@@ -227,7 +220,7 @@ export default function BlogSettingsPage() {
       if (imageRemoved) {
         thumbnailUrl = null
       } else if (imageFile) {
-        thumbnailUrl = await uploadImage(imageFile)
+        thumbnailUrl = await handleUploadImage(imageFile)
       }
 
       const supabase = createClient()
@@ -265,67 +258,53 @@ export default function BlogSettingsPage() {
     }
 
     setAddingCategory(true)
-    const supabase = createClient()
 
-    const { data, error } = await supabase
-      .from('categories')
-      .insert({
-        blog_id: blogId,
-        name: trimmedName,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      showToast('카테고리 추가에 실패했습니다', 'error')
-    } else if (data) {
+    try {
+      const data = await createCategory(blogId, trimmedName)
       setCategories([...categories, data].sort((a, b) => a.name.localeCompare(b.name)))
       setNewCategory('')
       showToast('카테고리가 추가되었습니다', 'success')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '카테고리 추가에 실패했습니다'
+      showToast(message, 'error')
     }
+
     setAddingCategory(false)
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
-    const supabase = createClient()
-
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('id', categoryId)
-
-    if (!error) {
+    try {
+      await deleteCategory(categoryId)
       setCategories(categories.filter(c => c.id !== categoryId))
+      showToast('카테고리가 삭제되었습니다', 'success')
+    } catch (err) {
+      console.error('Failed to delete category:', err)
+      showToast('카테고리 삭제에 실패했습니다', 'error')
     }
   }
 
   const handleTogglePublish = async (postId: string, currentPublished: boolean) => {
-    const supabase = createClient()
-
-    const { error } = await supabase
-      .from('posts')
-      .update({ published: !currentPublished })
-      .eq('id', postId)
-
-    if (!error) {
+    try {
+      await updatePost(postId, { published: !currentPublished })
       setPosts(posts.map(p =>
         p.id === postId ? { ...p, published: !currentPublished } : p
       ))
+    } catch (err) {
+      console.error('Failed to toggle publish:', err)
+      showToast('상태 변경에 실패했습니다', 'error')
     }
   }
 
   const handleDeletePost = async (postId: string) => {
     if (!confirm('정말 삭제하시겠습니까?')) return
 
-    const supabase = createClient()
-
-    const { error } = await supabase
-      .from('posts')
-      .delete()
-      .eq('id', postId)
-
-    if (!error) {
+    try {
+      await deletePostApi(postId)
       setPosts(posts.filter(p => p.id !== postId))
+      showToast('글이 삭제되었습니다', 'success')
+    } catch (err) {
+      console.error('Failed to delete post:', err)
+      showToast('삭제에 실패했습니다', 'error')
     }
   }
 

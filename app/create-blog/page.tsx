@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { uploadImage } from '@/lib/api/upload'
 import type { User } from '@supabase/supabase-js'
 
 export default function CreateBlogPage() {
@@ -77,21 +78,12 @@ export default function CreateBlogPage() {
     }
   }
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (!response.ok) {
+  const handleUploadImage = async (file: File): Promise<string | null> => {
+    const url = await uploadImage(file)
+    if (!url) {
       throw new Error('이미지 업로드에 실패했습니다')
     }
-
-    const data = await response.json()
-    return data.url
+    return url
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,7 +103,7 @@ export default function CreateBlogPage() {
       let thumbnailUrl: string | null = null
 
       if (imageFile) {
-        thumbnailUrl = await uploadImage(imageFile)
+        thumbnailUrl = await handleUploadImage(imageFile)
       }
 
       const supabase = createClient()

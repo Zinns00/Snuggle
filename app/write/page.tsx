@@ -13,6 +13,9 @@ import { all, createLowlight } from 'lowlight'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import CodeBlockComponent from '@/components/write/CodeBlockComponent'
+import { uploadTempImage, deleteTempImage } from '@/lib/api/upload'
+import { createPost } from '@/lib/api/posts'
+import { getCategories, createCategory } from '@/lib/api/categories'
 
 // highlight.js 테마 import
 import 'highlight.js/styles/github-dark.css'
@@ -25,43 +28,6 @@ const DRAFT_STORAGE_KEY = 'snuggle_draft'
 
 // temp 이미지 URL 패턴 (R2 public URL)
 const TEMP_IMAGE_PATTERN = /temp\/[^/]+\/[^"'\s]+/
-
-// 이미지 업로드 함수
-async function uploadImage(file: File): Promise<string | null> {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    try {
-        const response = await fetch('/api/upload/temp', {
-            method: 'POST',
-            body: formData,
-        })
-
-        if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.error || 'Upload failed')
-        }
-
-        const data = await response.json()
-        return data.url
-    } catch (error) {
-        console.error('Image upload failed:', error)
-        return null
-    }
-}
-
-// 이미지 삭제 함수
-async function deleteImage(url: string): Promise<void> {
-    try {
-        await fetch('/api/upload/temp', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
-        })
-    } catch (error) {
-        console.error('Image delete failed:', error)
-    }
-}
 
 // HTML에서 이미지 URL 추출
 function extractImageUrls(html: string): string[] {
@@ -211,7 +177,7 @@ export default function WritePage() {
                         event.preventDefault()
 
                         imageFiles.forEach(async (file) => {
-                            const url = await uploadImage(file)
+                            const url = await uploadTempImage(file)
                             if (url && view.state) {
                                 // 업로드된 이미지 추적
                                 uploadedImagesRef.current.add(url)
@@ -249,7 +215,7 @@ export default function WritePage() {
                     imageItems.forEach(async (item) => {
                         const file = item.getAsFile()
                         if (file) {
-                            const url = await uploadImage(file)
+                            const url = await uploadTempImage(file)
                             if (url && view.state) {
                                 // 업로드된 이미지 추적
                                 uploadedImagesRef.current.add(url)
@@ -276,7 +242,7 @@ export default function WritePage() {
             // 삭제된 이미지 찾기 및 R2에서 삭제
             uploadedImagesRef.current.forEach(url => {
                 if (!currentImages.has(url)) {
-                    deleteImage(url)
+                    deleteTempImage(url)
                     uploadedImagesRef.current.delete(url)
                 }
             })
@@ -366,15 +332,12 @@ export default function WritePage() {
 
             setBlog(blogData)
 
-            // 카테고리 정보 가져오기
-            const { data: categoryData } = await supabase
-                .from('categories')
-                .select('id, name')
-                .eq('blog_id', blogData.id)
-                .order('name')
-
-            if (categoryData) {
-                setCategories(categoryData)
+            // 카테고리 정보 가져오기 (백엔드 API 사용)
+            try {
+                const categoryData = await getCategories(blogData.id)
+                setCategories(categoryData.map(c => ({ id: c.id, name: c.name })))
+            } catch (err) {
+                console.error('Failed to load categories:', err)
             }
 
             setLoading(false)
@@ -387,30 +350,16 @@ export default function WritePage() {
     const handleAddCategory = async (name: string): Promise<Category | null> => {
         if (!blog) return null
 
-        // 중복 체크
-        if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-            alert('이미 존재하는 카테고리입니다')
+        try {
+            const data = await createCategory(blog.id, name)
+            const newCategory = { id: data.id, name: data.name }
+            setCategories(prev => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name)))
+            return newCategory
+        } catch (err) {
+            const message = err instanceof Error ? err.message : '카테고리 추가 실패'
+            alert(message)
             return null
         }
-
-        const supabase = createClient()
-
-        const { data, error } = await supabase
-            .from('categories')
-            .insert({
-                blog_id: blog.id,
-                name: name,
-            })
-            .select('id, name')
-            .single()
-
-        if (error || !data) {
-            console.error('카테고리 추가 실패:', error)
-            return null
-        }
-
-        setCategories(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
-        return data
     }
 
     // 임시저장
@@ -437,21 +386,13 @@ export default function WritePage() {
         setSaving(true)
 
         try {
-            const supabase = createClient()
-
-            const { error } = await supabase
-                .from('posts')
-                .insert({
-                    blog_id: blog.id,
-                    title: title.trim(),
-                    content: content,
-                    category_id: categoryId,
-                    published: true,
-                })
-                .select()
-                .single()
-
-            if (error) throw error
+            await createPost({
+                blog_id: blog.id,
+                title: title.trim(),
+                content: content,
+                category_id: categoryId,
+                published: true,
+            })
 
             // 발행 성공 시 초안 삭제
             clearDraft()
