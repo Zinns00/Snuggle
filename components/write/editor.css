@@ -80,7 +80,7 @@
 
 /* 코드 블록 스타일 */
 .tiptap pre {
-    background: #0d1117;
+    background: #1a1a1a;
     border-radius: 0.5rem;
     padding: 1rem;
     margin: 1rem 0;
@@ -96,6 +96,12 @@
     display: block;
     background: transparent !important;
     padding: 0 !important;
+}
+
+/* NodeViewContent 배경 투명 */
+.code-block-wrapper pre .hljs,
+.code-block-wrapper pre [data-node-view-content-react] {
+    background: transparent !important;
 }
 
 /* 인라인 코드 */

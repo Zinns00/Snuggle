@@ -51,6 +51,26 @@ export default function WritePage() {
                 addNodeView() {
                     return ReactNodeViewRenderer(CodeBlockComponent)
                 },
+                addKeyboardShortcuts() {
+                    return {
+                        'Mod-a': ({ editor }) => {
+                            const { $from } = editor.state.selection
+                            const node = $from.node($from.depth)
+
+                            // 코드블록 안에 있는지 확인
+                            if (node.type.name === 'codeBlock') {
+                                const pos = $from.before($from.depth)
+                                const nodeSize = node.nodeSize
+                                editor.commands.setTextSelection({
+                                    from: pos + 1,
+                                    to: pos + nodeSize - 1,
+                                })
+                                return true
+                            }
+                            return false
+                        },
+                    }
+                },
             }).configure({
                 lowlight,
                 defaultLanguage: 'javascript',
