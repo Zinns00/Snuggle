@@ -7,6 +7,7 @@ import LoginModal from '@/components/auth/LoginModal'
 import UserMenu from '@/components/auth/UserMenu'
 import PostList from '@/components/blog/PostList'
 import MyBlogSidebar from '@/components/blog/MyBlogSidebar'
+import NewBloggers from '@/components/blog/NewBloggers'
 import { syncProfile } from '@/lib/api/profile'
 import type { User } from '@supabase/supabase-js'
 
@@ -129,6 +130,7 @@ export default function Home() {
           <div className="w-80 flex-shrink-0">
             <div className="sticky top-8">
               <MyBlogSidebar user={user} />
+              <NewBloggers />
             </div>
           </div>
         </div>
