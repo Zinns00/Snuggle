@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import BlogProfileSidebar from '@/components/blog/BlogProfileSidebar'
 import BlogPostList from '@/components/blog/BlogPostList'
-import BlogSkinProvider from '@/components/blog/BlogSkinProvider'
+import BlogSkinProvider, { useBlogSkin } from '@/components/blog/BlogSkinProvider'
+import BlogLayout from '@/components/blog/BlogLayout'
 
 interface Blog {
   id: string
@@ -21,6 +22,55 @@ interface Profile {
   id: string
   nickname: string | null
   profile_image_url: string | null
+}
+
+interface BlogContentProps {
+  blog: Blog
+  profile: Profile | null
+  postCount: number
+  isOwner: boolean
+}
+
+function BlogContent({ blog, profile, postCount, isOwner }: BlogContentProps) {
+  const { layoutConfig } = useBlogSkin()
+
+  return (
+    <div className="min-h-screen bg-[var(--blog-bg)]" style={{ color: 'var(--blog-fg)' }}>
+      {/* 헤더 */}
+      <header className="border-b border-[var(--blog-border)]">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          <a href="/" className="text-lg font-bold text-[var(--blog-fg)]">
+            Snuggle
+          </a>
+          {isOwner && (
+            <a
+              href="/write"
+              className="rounded-full bg-[var(--blog-accent)] px-4 py-2 text-sm font-medium text-[var(--blog-bg)]"
+            >
+              새 글 작성
+            </a>
+          )}
+        </div>
+      </header>
+
+      {/* 메인 컨텐츠 */}
+      <main className="mx-auto max-w-6xl px-6 py-10">
+        <BlogLayout
+          layout={layoutConfig.layout}
+          sidebar={
+            <BlogProfileSidebar
+              blog={blog}
+              profile={profile}
+              postCount={postCount}
+              isOwner={isOwner}
+            />
+          }
+        >
+          <BlogPostList blogId={blog.id} isOwner={isOwner} />
+        </BlogLayout>
+      </main>
+    </div>
+  )
 }
 
 export default function BlogPage() {
@@ -38,11 +88,9 @@ export default function BlogPage() {
     const fetchData = async () => {
       const supabase = createClient()
 
-      // 현재 로그인한 사용자
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUser(user)
 
-      // 블로그 정보
       const { data: blogData, error: blogError } = await supabase
         .from('blogs')
         .select('*')
@@ -57,7 +105,6 @@ export default function BlogPage() {
 
       setBlog(blogData)
 
-      // 프로필 정보
       const { data: profileData } = await supabase
         .from('profiles')
         .select('id, nickname, profile_image_url')
@@ -68,7 +115,6 @@ export default function BlogPage() {
         setProfile(profileData)
       }
 
-      // 게시글 수
       const { count } = await supabase
         .from('posts')
         .select('*', { count: 'exact', head: true })
@@ -110,44 +156,12 @@ export default function BlogPage() {
 
   return (
     <BlogSkinProvider blogId={blogId}>
-      <div className="min-h-screen bg-[var(--blog-bg)]" style={{ color: 'var(--blog-fg)' }}>
-        {/* 헤더 */}
-        <header className="border-b border-[var(--blog-border)]">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-            <a href="/" className="text-lg font-bold text-[var(--blog-fg)]">
-              Snuggle
-            </a>
-            {isOwner && (
-              <a
-                href="/write"
-                className="rounded-full bg-[var(--blog-accent)] px-4 py-2 text-sm font-medium text-[var(--blog-bg)]"
-              >
-                새 글 작성
-              </a>
-            )}
-          </div>
-        </header>
-
-        {/* 메인 컨텐츠 */}
-        <main className="mx-auto max-w-6xl px-6 py-10">
-          <div className="flex gap-10">
-            {/* 왼쪽: 포스트 목록 */}
-            <div className="flex-1">
-              <BlogPostList blogId={blogId} isOwner={isOwner} />
-            </div>
-
-            {/* 오른쪽: 프로필 사이드바 */}
-            <div className="w-80 shrink-0">
-              <BlogProfileSidebar
-                blog={blog}
-                profile={profile}
-                postCount={postCount}
-                isOwner={isOwner}
-              />
-            </div>
-          </div>
-        </main>
-      </div>
+      <BlogContent
+        blog={blog}
+        profile={profile}
+        postCount={postCount}
+        isOwner={isOwner}
+      />
     </BlogSkinProvider>
   )
 }
