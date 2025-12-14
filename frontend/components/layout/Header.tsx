@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { useUserStore } from '@/lib/store/useUserStore'
@@ -18,7 +18,50 @@ export default function Header() {
     const { user } = useUserStore()
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
 
-    // Hide header on blog pages, post pages, management pages and write page
+    // Refs for tab pill animation
+    const tabContainerRef = useRef<HTMLDivElement>(null)
+    const skinsTabRef = useRef<HTMLAnchorElement>(null)
+    const marketplaceTabRef = useRef<HTMLAnchorElement>(null)
+    const [pillStyle, setPillStyle] = useState({ transform: 'translateX(0)', width: 0 })
+    const [isInitialized, setIsInitialized] = useState(false)
+
+    const isMainPage = pathname === '/'
+    const isForumPage = pathname.startsWith('/forum')
+    const isFeedPage = pathname === '/feed'
+    const isSkinsPage = pathname === '/skins'
+    const isMarketplacePage = pathname === '/marketplace'
+    const isSkinsSection = isSkinsPage || isMarketplacePage
+
+    // Update pill position based on active tab
+    useEffect(() => {
+        const updatePill = () => {
+            const activeRef = isSkinsPage ? skinsTabRef : marketplaceTabRef
+            if (activeRef.current && tabContainerRef.current) {
+                const containerRect = tabContainerRef.current.getBoundingClientRect()
+                const tabRect = activeRef.current.getBoundingClientRect()
+                const offsetX = tabRect.left - containerRect.left
+
+                setPillStyle({
+                    transform: `translateX(${offsetX}px)`,
+                    width: tabRect.width,
+                })
+
+                // Enable transition after initial render
+                if (!isInitialized) {
+                    requestAnimationFrame(() => {
+                        setIsInitialized(true)
+                    })
+                }
+            }
+        }
+
+        updatePill()
+        // Also update on window resize
+        window.addEventListener('resize', updatePill)
+        return () => window.removeEventListener('resize', updatePill)
+    }, [isSkinsPage, isMarketplacePage, isInitialized])
+
+    // Hide header on blog pages, post pages, management pages, and write page
     // Blog and post pages use BlogHeader with blog-specific themes
     if (
         pathname.includes('/manage') ||
@@ -29,35 +72,6 @@ export default function Header() {
     ) {
         return null
     }
-
-    const isMainPage = pathname === '/'
-    const isForumPage = pathname.startsWith('/forum')
-    const isFeedPage = pathname === '/feed'
-
-    // Specific logic for elements
-    // Main Page: Search + Profile + ThemeToggle (Global?)
-    // Forum: Logo, Nav, ThemeToggle. Hide Search/Profile? User said: search and profile ONLY on main page.
-    // Wait, User said: "Search and round profile picture ONLY on main page".
-    // "Other pages... Snuggle logo, Home, Feed, Skin, Forum buttons".
-    // "Forum ONLY: Dark/White mode toggle".
-    // Let's interpret strictly.
-
-    // Common Elements: Logo, Navigation (Home, Feed, Skin, Forum) - wait, Main page already has Nav.
-    // The user laid out specific requirements for "Other pages".
-    // Main Page: As is (implied, or "Search and round profile picture exist").
-    // Let's assume Main Page keeps its current layout (Logo, Nav, Search, Theme, Profile).
-
-    // Requirement: "Search and round profile picture are ONLY on main page" -> implication: remove from others.
-    // "Other pages... Snuggle logo button, Home button, Feed button, Skin button, Forum button".
-    // "Forum ONLY: Dark/White mode toggle".
-
-    // So:
-    // Logo: All pages.
-    // Nav: All pages.
-    // Search: Main page only.
-    // Profile (UserMenu): Main page only.
-    // ThemeToggle: Main page (existing) AND Forum page (requested). What about others? "Forum ONLY" might mean "Among the others, only Forum gets it".
-    // Or "Main page has it too". I'll keep it on Main and Forum.
 
     return (
         <>
@@ -112,11 +126,55 @@ export default function Header() {
 
                     {/* Actions */}
                     <div className="relative z-10 flex items-center gap-3">
+                        {/* Skins Section Tabs with Sliding Pill Animation */}
+                        {isSkinsSection && (
+                            <div
+                                ref={tabContainerRef}
+                                className="relative flex items-center rounded-full bg-black/5 p-1 dark:bg-white/5"
+                            >
+                                {/* Sliding Pill Background - GPU accelerated */}
+                                <div
+                                    className="absolute top-1 bottom-1 left-0 rounded-full bg-black dark:bg-white"
+                                    style={{
+                                        transform: pillStyle.transform,
+                                        width: pillStyle.width || 'auto',
+                                        willChange: 'transform, width',
+                                        transition: isInitialized
+                                            ? 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                                            : 'none',
+                                    }}
+                                />
+                                {/* Tab Links */}
+                                <a
+                                    ref={skinsTabRef}
+                                    href="/skins"
+                                    className={`relative z-10 rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150 ${
+                                        isSkinsPage
+                                            ? 'text-white dark:text-black'
+                                            : 'text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white'
+                                    }`}
+                                >
+                                    내 스킨
+                                </a>
+                                <a
+                                    ref={marketplaceTabRef}
+                                    href="/marketplace"
+                                    className={`relative z-10 rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150 ${
+                                        isMarketplacePage
+                                            ? 'text-white dark:text-black'
+                                            : 'text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white'
+                                    }`}
+                                >
+                                    마켓플레이스
+                                </a>
+                            </div>
+                        )}
+
                         {/* Search - Main Page Only */}
                         {isMainPage && <SearchInputWithSuggestions />}
 
-                        {/* Theme Toggle - Main Page OR Forum Page OR Feed Page */}
-                        {(isMainPage || isForumPage || isFeedPage) && <ThemeToggle />}
+                        {/* Theme Toggle - Main Page OR Forum Page OR Feed Page OR Skins Section */}
+                        {(isMainPage || isForumPage || isFeedPage || isSkinsSection) && <ThemeToggle />}
 
                         {/* User Menu / Login - Main Page Only */}
                         {isMainPage && (
@@ -132,12 +190,6 @@ export default function Header() {
                                 </button>
                             )
                         )}
-
-                        {/* If not main page, user menu is hidden. How do they log in/out? 
-               User constraint: "Round profile picture is ONLY on main page". 
-               Maybe "Start" button is allowed? 
-               I will stick to the strict requirement: Hide profile on others.
-            */}
                     </div>
                 </div>
             </header>

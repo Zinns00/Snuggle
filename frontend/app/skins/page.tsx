@@ -148,22 +148,7 @@ export default function SkinsPage() {
   const displayImage = userBlog?.thumbnail_url || profile?.profile_image_url
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-100 dark:bg-zinc-950">
-      {/* 서브 네비게이션 (스킨 전용) */}
-      <div className="shrink-0 border-b border-black/10 bg-white px-4 py-3 dark:border-white/10 dark:bg-black">
-        <div className="mx-auto flex max-w-screen-2xl items-center justify-end gap-4">
-          <span className="text-sm font-medium text-black dark:text-white">
-            내 스킨
-          </span>
-          <a
-            href="/marketplace"
-            className="text-sm text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
-          >
-            마켓플레이스
-          </a>
-        </div>
-      </div>
-
+    <div className="flex min-h-[calc(100vh-64px)] flex-col bg-zinc-100 dark:bg-zinc-950">
       {/* 메인 - Split View */}
       <div className="flex flex-1 overflow-hidden">
         {/* 왼쪽: 스킨 목록 */}
