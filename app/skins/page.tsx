@@ -87,10 +87,18 @@ export default function SkinsPage() {
           .from('profiles')
           .select('id, nickname, profile_image_url')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
         if (profileData) {
           setProfile(profileData)
+        } else {
+          // 프로필이 없으면 user metadata에서 카카오 프로필 사용
+          const kakaoProfile = user.user_metadata?.avatar_url || user.user_metadata?.picture
+          setProfile({
+            id: user.id,
+            nickname: user.user_metadata?.name || user.user_metadata?.full_name || null,
+            profile_image_url: kakaoProfile || null,
+          })
         }
       }
 
