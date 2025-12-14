@@ -1,6 +1,7 @@
 'use client'
 
 import ProfileImage from '@/components/common/ProfileImage'
+import VisitorCounter from './VisitorCounter'
 
 interface Blog {
   id: string
@@ -65,7 +66,7 @@ export default function BlogProfileSidebar({
         <div className="mt-6 flex justify-center gap-8">
           <div className="text-center">
             <p className="text-2xl font-bold text-black dark:text-white">
-              {postCount}
+              {postCount ?? 0}
             </p>
             <p className="text-xs text-black/50 dark:text-white/50">게시글</p>
           </div>
@@ -73,6 +74,7 @@ export default function BlogProfileSidebar({
             <p className="text-2xl font-bold text-black dark:text-white">0</p>
             <p className="text-xs text-black/50 dark:text-white/50">구독자</p>
           </div>
+          <VisitorCounter variant="stat" />
         </div>
 
         {/* 소유자 전용 버튼 */}
@@ -100,7 +102,7 @@ export default function BlogProfileSidebar({
           </div>
           <div className="flex justify-between">
             <span className="text-black/50 dark:text-white/50">총 게시글</span>
-            <span className="text-black dark:text-white">{postCount}개</span>
+            <span className="text-black dark:text-white">{postCount ?? 0}개</span>
           </div>
         </div>
       </div>
