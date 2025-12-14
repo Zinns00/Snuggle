@@ -17,7 +17,7 @@ interface ForumWithRelations {
   created_at: string
   updated_at: string
   view_count: number
-  blog: { name: string; thumbnail_url: string | null } | null
+  blog: { name: string; thumbnail_url: string | null; user_id: string } | null
   comments: { count: number }[]
 }
 
@@ -35,7 +35,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       .from('forums')
       .select(`
         *,
-        blog:blogs ( name, thumbnail_url ),
+        blog:blogs ( name, thumbnail_url, user_id ),
         comments:forum_comments(count)
       `)
       .order('created_at', { ascending: false })
@@ -70,10 +70,29 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       return
     }
 
-    // Transform count array to number
+    // 프로필 정보 가져오기 (카카오 프로필 이미지용)
+    const userIds = (forums as ForumWithRelations[])
+      .map((f) => f.blog?.user_id)
+      .filter(Boolean) as string[]
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, profile_image_url')
+      .in('id', userIds)
+
+    const profileMap = new Map(
+      (profiles || []).map((p: { id: string; profile_image_url: string | null }) => [p.id, p.profile_image_url])
+    )
+
+    // Transform count array to number and add profile_image_url
     const result = (forums as ForumWithRelations[]).map((item) => ({
       ...item,
       comment_count: item.comments?.[0]?.count || 0,
+      blog: item.blog ? {
+        name: item.blog.name,
+        thumbnail_url: item.blog.thumbnail_url,
+        profile_image_url: profileMap.get(item.blog.user_id) || null,
+      } : null,
     }))
 
     res.json(result)
@@ -91,7 +110,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
       .from('forums')
       .select(`
         *,
-        blog:blogs ( name, thumbnail_url )
+        blog:blogs ( name, thumbnail_url, user_id )
       `)
       .eq('id', id)
       .single()
@@ -102,6 +121,17 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
     }
 
     const forum = data as ForumWithRelations
+
+    // 프로필 정보 가져오기 (카카오 프로필 이미지용)
+    let profileImageUrl: string | null = null
+    if (forum.blog?.user_id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('profile_image_url')
+        .eq('id', forum.blog.user_id)
+        .single()
+      profileImageUrl = profile?.profile_image_url || null
+    }
 
     // 조회수 증가 (비동기로 처리, 실패해도 응답에 영향 없음)
     void (async () => {
@@ -123,6 +153,11 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 
     res.json({
       ...forum,
+      blog: forum.blog ? {
+        name: forum.blog.name,
+        thumbnail_url: forum.blog.thumbnail_url,
+        profile_image_url: profileImageUrl,
+      } : null,
       view_count: (forum.view_count || 0) + 1,
       comment_count: count || 0
     })
@@ -269,7 +304,7 @@ router.get('/:id/comments', async (req: Request, res: Response): Promise<void> =
       .from('forum_comments')
       .select(`
         *,
-        blog:blogs ( name, thumbnail_url )
+        blog:blogs ( name, thumbnail_url, user_id )
       `)
       .eq('forum_id', id)
       .order('created_at', { ascending: true })
@@ -279,7 +314,31 @@ router.get('/:id/comments', async (req: Request, res: Response): Promise<void> =
       return
     }
 
-    res.json(data)
+    // 프로필 정보 가져오기 (카카오 프로필 이미지용)
+    const userIds = (data || [])
+      .map((c: { blog: { user_id: string } | null }) => c.blog?.user_id)
+      .filter(Boolean) as string[]
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, profile_image_url')
+      .in('id', userIds)
+
+    const profileMap = new Map(
+      (profiles || []).map((p: { id: string; profile_image_url: string | null }) => [p.id, p.profile_image_url])
+    )
+
+    // Transform to include profile_image_url
+    const result = (data || []).map((comment: { blog: { name: string; thumbnail_url: string | null; user_id: string } | null; [key: string]: unknown }) => ({
+      ...comment,
+      blog: comment.blog ? {
+        name: comment.blog.name,
+        thumbnail_url: comment.blog.thumbnail_url,
+        profile_image_url: profileMap.get(comment.blog.user_id) || null,
+      } : null,
+    }))
+
+    res.json(result)
   } catch (error) {
     logger.error('Fetch comments error:', error)
     res.status(500).json({ error: 'Failed to fetch comments' })

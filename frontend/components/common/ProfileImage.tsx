@@ -38,13 +38,12 @@ export default function ProfileImage({
   const sizeClass = sizeClasses[size]
   const roundedClass = roundedClasses[rounded]
 
+  // 이미지가 없거나 로드 실패 시 빈 플레이스홀더 표시 (이니셜 대신)
   if (!src || error) {
     return (
       <div
-        className={`flex items-center justify-center bg-black font-bold text-white dark:bg-white dark:text-black ${sizeClass} ${roundedClass} ${className}`}
-      >
-        {fallback.charAt(0)}
-      </div>
+        className={`flex items-center justify-center bg-black/10 dark:bg-white/10 ${sizeClass} ${roundedClass} ${className}`}
+      />
     )
   }
 

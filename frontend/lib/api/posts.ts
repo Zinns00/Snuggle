@@ -51,6 +51,7 @@ export interface PostListItem {
   blog: {
     name: string
     thumbnail_url: string | null
+    profile_image_url: string | null
   } | null
 }
 

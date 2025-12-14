@@ -86,7 +86,7 @@ export default function SkinsPage() {
           .from('profiles')
           .select('id, nickname, profile_image_url')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
         if (profileData) {
           setProfile(profileData)

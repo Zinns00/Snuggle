@@ -528,9 +528,7 @@ export default function BlogSettingsPage() {
                           />
                         </>
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-black/5 text-3xl font-bold text-black/30 dark:bg-white/5 dark:text-white/30">
-                          {name.charAt(0) || '?'}
-                        </div>
+                        <div className="h-full w-full bg-black/5 dark:bg-white/5" />
                       )}
                       {/* 호버 오버레이 */}
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">

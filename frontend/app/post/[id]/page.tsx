@@ -163,17 +163,15 @@ export default function PostPage() {
                                 href={`/blog/${postData.blog.id}`}
                                 className="flex items-center gap-3 transition-opacity hover:opacity-80"
                             >
-                                {(postData.blog.thumbnail_url || postData.profile?.profile_image_url) ? (
-                                    <img
-                                        src={postData.blog.thumbnail_url || postData.profile?.profile_image_url || ''}
-                                        alt={postData.profile?.nickname || postData.blog.name}
-                                        className="h-10 w-10 rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--blog-fg)]/10 text-sm font-bold text-[var(--blog-muted)]">
-                                        {(postData.profile?.nickname || postData.blog.name).charAt(0)}
-                                    </div>
-                                )}
+                                <div className="h-10 w-10 rounded-full overflow-hidden bg-[var(--blog-fg)]/10">
+                                    {(postData.blog.thumbnail_url || postData.profile?.profile_image_url) && (
+                                        <img
+                                            src={postData.blog.thumbnail_url || postData.profile?.profile_image_url || ''}
+                                            alt={postData.profile?.nickname || postData.blog.name}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    )}
+                                </div>
                                 <div>
                                     <p className="font-medium text-[var(--blog-fg)]">
                                         {postData.profile?.nickname || postData.blog.name}

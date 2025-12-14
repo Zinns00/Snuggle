@@ -63,6 +63,7 @@ function SearchContent() {
                                 blog: post.blog ? {
                                     name: post.blog.name,
                                     thumbnail_url: post.blog.thumbnail_url,
+                                    profile_image_url: post.blog.profile_image_url,
                                 } : null,
                             }}
                         />

@@ -39,7 +39,7 @@ router.get('/posts', async (req: Request, res: Response): Promise<void> => {
       .from('posts')
       .select(`
         id, title, content, thumbnail_url, created_at, blog_id,
-        blog:blogs ( id, name, thumbnail_url )
+        blog:blogs ( id, name, thumbnail_url, user_id )
       `)
       .eq('is_private', false)
       .or(`title.ilike.${searchQuery},content.ilike.${searchQuery}`)
@@ -51,9 +51,28 @@ router.get('/posts', async (req: Request, res: Response): Promise<void> => {
       return
     }
 
+    // 프로필 정보 가져오기 (카카오 프로필 이미지용)
+    const userIds = (posts || [])
+      .map((p: Record<string, unknown>) => {
+        const blogData = p.blog as Record<string, unknown> | null
+        return blogData?.user_id as string
+      })
+      .filter(Boolean)
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, profile_image_url')
+      .in('id', userIds)
+
+    const profileMap = new Map(
+      (profiles || []).map((p: { id: string; profile_image_url: string | null }) => [p.id, p.profile_image_url])
+    )
+
     // Transform response
     const result = (posts || []).map((post: Record<string, unknown>) => {
       const blogData = post.blog as Record<string, unknown> | null
+      const blogUserId = blogData?.user_id as string | undefined
+      const profileImageUrl = blogUserId ? profileMap.get(blogUserId) : null
       return {
         id: post.id,
         title: post.title,
@@ -65,6 +84,7 @@ router.get('/posts', async (req: Request, res: Response): Promise<void> => {
           id: blogData.id,
           name: blogData.name,
           thumbnail_url: blogData.thumbnail_url,
+          profile_image_url: profileImageUrl || null,
         } : null,
       }
     })

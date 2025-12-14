@@ -19,20 +19,13 @@ interface Blog {
   created_at: string
 }
 
-interface Profile {
-  id: string
-  nickname: string | null
-  profile_image_url: string | null
-}
-
 interface BlogContentProps {
   blog: Blog
-  profile: Profile | null
   postCount: number
   isOwner: boolean
 }
 
-function BlogContent({ blog, profile, postCount, isOwner }: BlogContentProps) {
+function BlogContent({ blog, postCount, isOwner }: BlogContentProps) {
   const { layoutConfig } = useBlogSkin()
 
   return (
@@ -63,7 +56,6 @@ function BlogContent({ blog, profile, postCount, isOwner }: BlogContentProps) {
           sidebar={
             <BlogProfileSidebar
               blog={blog}
-              profile={profile}
               postCount={postCount}
               isOwner={isOwner}
             />
@@ -81,7 +73,6 @@ export default function BlogPage() {
   const blogId = params.id as string
 
   const [blog, setBlog] = useState<Blog | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [postCount, setPostCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -107,16 +98,6 @@ export default function BlogPage() {
       }
 
       setBlog(blogData)
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, nickname, profile_image_url')
-        .eq('id', blogData.user_id)
-        .single()
-
-      if (profileData) {
-        setProfile(profileData)
-      }
 
       const { count } = await supabase
         .from('posts')
@@ -160,7 +141,6 @@ export default function BlogPage() {
     <BlogSkinProvider blogId={blogId}>
       <BlogContent
         blog={blog}
-        profile={profile}
         postCount={postCount}
         isOwner={isOwner}
       />

@@ -2,28 +2,27 @@
 
 import Link from 'next/link'
 import { SearchBlogResult } from '@/lib/api/search'
+import { getBlogImageUrl } from '@/lib/utils/image'
 
 interface SearchBlogCardProps {
     blog: SearchBlogResult
 }
 
 export default function SearchBlogCard({ blog }: SearchBlogCardProps) {
+    const imageUrl = getBlogImageUrl(blog.thumbnail_url, blog.profile?.profile_image_url)
+
     return (
         <Link
             href={`/blog/${blog.id}`}
             className="block rounded-lg border border-black/10 p-4 transition-colors hover:bg-black/[0.02] dark:border-white/10 dark:hover:bg-white/[0.02]"
         >
             <div className="flex items-center gap-4">
-                {blog.thumbnail_url ? (
+                {imageUrl && (
                     <img
-                        src={blog.thumbnail_url}
+                        src={imageUrl}
                         alt={blog.name}
                         className="h-12 w-12 rounded-full object-cover"
                     />
-                ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/10 text-lg font-medium dark:bg-white/10">
-                        {blog.name.charAt(0)}
-                    </div>
                 )}
                 <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-black dark:text-white truncate">

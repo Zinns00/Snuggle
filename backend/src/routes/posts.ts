@@ -53,10 +53,27 @@ router.get('/feed', authMiddleware, async (req: AuthenticatedRequest, res: Respo
 
     if (postError) throw postError
 
+    // 프로필 정보 가져오기 (카카오 프로필 이미지용)
+    const userIds = (posts || []).map((p: Record<string, unknown>) => {
+      const blogData = p.blog as Record<string, unknown> | null
+      return blogData?.user_id as string
+    }).filter(Boolean)
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, profile_image_url')
+      .in('id', userIds)
+
+    const profileMap = new Map(
+      (profiles || []).map((p: { id: string; profile_image_url: string | null }) => [p.id, p.profile_image_url])
+    )
+
     // Transform response to match frontend expectation
     // Supabase returns relation as array, get first item
     const result = (posts || []).map((post: Record<string, unknown>) => {
       const blogData = post.blog as Record<string, unknown> | null
+      const blogUserId = blogData?.user_id as string | undefined
+      const profileImageUrl = blogUserId ? profileMap.get(blogUserId) : null
       return {
         id: post.id,
         title: post.title,
@@ -67,6 +84,7 @@ router.get('/feed', authMiddleware, async (req: AuthenticatedRequest, res: Respo
         blog: blogData ? {
           name: (blogData.name as string) || '',
           thumbnail_url: (blogData.thumbnail_url as string | null) || null,
+          profile_image_url: profileImageUrl || null,
         } : null,
       }
     })
@@ -89,7 +107,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       .from('posts')
       .select(`
         id, title, content, thumbnail_url, created_at, blog_id,
-        blog:blogs ( name, thumbnail_url )
+        blog:blogs ( name, thumbnail_url, user_id )
       `)
       .eq('is_private', false)
       .order('created_at', { ascending: false })
@@ -100,9 +118,26 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       return
     }
 
+    // 프로필 정보 가져오기 (카카오 프로필 이미지용)
+    const userIds = (posts || []).map((p: Record<string, unknown>) => {
+      const blogData = p.blog as Record<string, unknown> | null
+      return blogData?.user_id as string
+    }).filter(Boolean)
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, profile_image_url')
+      .in('id', userIds)
+
+    const profileMap = new Map(
+      (profiles || []).map((p: { id: string; profile_image_url: string | null }) => [p.id, p.profile_image_url])
+    )
+
     // Transform response
     const postsWithDetails = (posts || []).map((post: Record<string, unknown>) => {
       const blogData = post.blog as Record<string, unknown> | null
+      const blogUserId = blogData?.user_id as string | undefined
+      const profileImageUrl = blogUserId ? profileMap.get(blogUserId) : null
       return {
         id: post.id,
         title: post.title,
@@ -110,7 +145,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         thumbnail_url: post.thumbnail_url,
         created_at: post.created_at,
         blog_id: post.blog_id,
-        blog: blogData ? { name: blogData.name, thumbnail_url: blogData.thumbnail_url } : null,
+        blog: blogData ? {
+          name: blogData.name,
+          thumbnail_url: blogData.thumbnail_url,
+          profile_image_url: profileImageUrl || null,
+        } : null,
       }
     })
 

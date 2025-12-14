@@ -7,6 +7,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { createClient } from '@/lib/supabase/client'
+import { getBlogImageUrl } from '@/lib/utils/image'
 
 interface ForumCommentListProps {
     forumId: string
@@ -72,7 +73,7 @@ export default function ForumCommentList({ forumId }: ForumCommentListProps) {
                 {comments.map((comment) => (
                     <div key={comment.id} className="flex gap-4">
                         <ProfileImage
-                            src={comment.blog?.thumbnail_url}
+                            src={getBlogImageUrl(comment.blog?.thumbnail_url, comment.blog?.profile_image_url)}
                             fallback={comment.blog?.name || 'U'}
                             alt={comment.blog?.name || 'User'}
                             size="md"

@@ -1,5 +1,7 @@
 'use client'
 
+import { getBlogImageUrl } from '@/lib/utils/image'
+
 interface PostCardProps {
   post: {
     id: string
@@ -10,6 +12,7 @@ interface PostCardProps {
     blog: {
       name: string
       thumbnail_url: string | null
+      profile_image_url?: string | null
     } | null
   }
 }
@@ -35,7 +38,7 @@ function getFirstParagraph(html: string): string {
 
 export default function PostCard({ post }: PostCardProps) {
   const blogName = post.blog?.name || '알 수 없음'
-  const blogImage = post.blog?.thumbnail_url
+  const blogImage = getBlogImageUrl(post.blog?.thumbnail_url, post.blog?.profile_image_url)
   const preview = post.content ? getFirstParagraph(post.content).slice(0, 150) : ''
   const date = new Date(post.created_at).toLocaleDateString('ko-KR', {
     year: 'numeric',
@@ -71,16 +74,12 @@ export default function PostCard({ post }: PostCardProps) {
 
             {/* 블로그 정보 */}
             <div className="mt-3 flex items-center gap-2">
-              {blogImage ? (
+              {blogImage && (
                 <img
                   src={blogImage}
                   alt={blogName}
                   className="h-5 w-5 rounded-full object-cover"
                 />
-              ) : (
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-black/10 text-xs dark:bg-white/10">
-                  {blogName.charAt(0)}
-                </div>
               )}
               <span className="text-xs text-black/50 dark:text-white/50">
                 {blogName} · {date}

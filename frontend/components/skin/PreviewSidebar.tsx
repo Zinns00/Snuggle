@@ -35,14 +35,11 @@ export default function PreviewSidebar({
           />
         ) : (
           <div
-            className="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold"
+            className="h-16 w-16 rounded-full"
             style={{
-              backgroundColor: cssVars['--blog-accent'],
-              color: cssVars['--blog-bg'],
+              backgroundColor: cssVars['--blog-muted'] + '20',
             }}
-          >
-            {blogName.charAt(0)}
-          </div>
+          />
         )}
         <h3
           className="mt-3 font-semibold"

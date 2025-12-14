@@ -1,8 +1,8 @@
 'use client'
 
-import ProfileImage from '@/components/common/ProfileImage'
-
+import { useState, useEffect } from 'react'
 import SubscriptionButton from '@/components/common/SubscriptionButton'
+import { createClient } from '@/lib/supabase/client'
 
 interface Blog {
   id: string
@@ -13,25 +13,49 @@ interface Blog {
   created_at: string
 }
 
-interface Profile {
-  id: string
-  nickname: string | null
-  profile_image_url: string | null
-}
-
 interface BlogProfileSidebarProps {
   blog: Blog
-  profile: Profile | null
   postCount: number
   isOwner: boolean
 }
 
 export default function BlogProfileSidebar({
   blog,
-  profile,
   postCount,
   isOwner,
 }: BlogProfileSidebarProps) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // 프로필 이미지 가져오기 (thumbnail_url 우선, 없으면 profile_image_url)
+  useEffect(() => {
+    const fetchImage = async () => {
+      if (blog.thumbnail_url && blog.thumbnail_url.trim()) {
+        setImageUrl(blog.thumbnail_url)
+        setLoading(false)
+        return
+      }
+
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('profiles')
+          .select('profile_image_url')
+          .eq('id', blog.user_id)
+          .single()
+
+        if (data?.profile_image_url) {
+          setImageUrl(data.profile_image_url.replace('http://', 'https://'))
+        }
+      } catch {
+        // ignore
+      }
+      setLoading(false)
+    }
+
+    fetchImage()
+  }, [blog.thumbnail_url, blog.user_id])
+
   const createdDate = new Date(blog.created_at).toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -44,13 +68,23 @@ export default function BlogProfileSidebar({
       <div className="rounded-2xl border border-[var(--blog-border)] bg-[var(--blog-card-bg)] p-6">
         {/* 블로그 썸네일 */}
         <div className="flex flex-col items-center">
-          <ProfileImage
-            src={blog.thumbnail_url || profile?.profile_image_url}
-            alt={blog.name}
-            fallback={blog.name}
-            size="lg"
-            rounded="2xl"
-          />
+          <div className="h-24 w-24 overflow-hidden rounded-2xl bg-[var(--blog-muted)]/10">
+            {loading ? (
+              <div className="flex h-full w-full items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--blog-muted)]/20 border-t-[var(--blog-muted)]" />
+              </div>
+            ) : imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={blog.name}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  console.error('[BlogProfileSidebar] Image load error:', imageUrl)
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            ) : null}
+          </div>
 
           <h1 className="mt-4 text-xl font-bold text-[var(--blog-fg)]">
             {blog.name}

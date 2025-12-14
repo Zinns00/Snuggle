@@ -147,9 +147,7 @@ export default function SearchInputWithSuggestions({
                                                     className="h-5 w-5 rounded-full object-cover"
                                                 />
                                             ) : (
-                                                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-black/10 text-xs dark:bg-white/10">
-                                                    {blog.name.charAt(0)}
-                                                </div>
+                                                <div className="h-5 w-5 rounded-full bg-black/10 dark:bg-white/10" />
                                             )}
                                             {blog.name}
                                         </Link>

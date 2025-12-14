@@ -4,6 +4,7 @@ import React from 'react'
 import ProfileImage from '@/components/common/ProfileImage'
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import { getBlogImageUrl } from '@/lib/utils/image'
 
 interface FeedItemProps {
     post: {
@@ -16,6 +17,7 @@ interface FeedItemProps {
         blog: {
             name: string
             thumbnail_url: string | null
+            profile_image_url?: string | null
         } | null
         // 추가적으로 필요한 정보들 (댓글 수, 좋아요 수 등은 API가 제공한다면)
     }
@@ -41,7 +43,7 @@ export default function FeedItem({ post }: FeedItemProps) {
             <div className="w-24 flex-shrink-0">
                 <a href={`/blog/${post.blog_id}`} className="flex flex-col items-center text-center">
                     <ProfileImage
-                        src={post.blog?.thumbnail_url}
+                        src={getBlogImageUrl(post.blog?.thumbnail_url, post.blog?.profile_image_url)}
                         alt={post.blog?.name || '블로그'}
                         fallback={post.blog?.name || '블로그'}
                         size="md"

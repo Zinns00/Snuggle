@@ -6,6 +6,7 @@ import ProfileImage from '@/components/common/ProfileImage'
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import ForumCommentList from './ForumCommentList'
+import { getBlogImageUrl } from '@/lib/utils/image'
 
 interface ForumItemProps {
     post: ForumPost
@@ -27,7 +28,7 @@ export default function ForumItem({ post }: ForumItemProps) {
                 {/* Author Profile */}
                 <div className="hidden sm:block">
                     <ProfileImage
-                        src={post.blog?.thumbnail_url}
+                        src={getBlogImageUrl(post.blog?.thumbnail_url, post.blog?.profile_image_url)}
                         alt={post.blog?.name || 'User'}
                         fallback={post.blog?.name || 'U'}
                         size="md"
@@ -47,7 +48,7 @@ export default function ForumItem({ post }: ForumItemProps) {
                         <div className="sm:hidden ml-auto">
                             <ProfileImage
                                 size="sm"
-                                src={post.blog?.thumbnail_url}
+                                src={getBlogImageUrl(post.blog?.thumbnail_url, post.blog?.profile_image_url)}
                                 alt={post.blog?.name || 'User'}
                                 fallback={post.blog?.name || 'U'}
                             />

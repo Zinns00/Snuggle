@@ -18,6 +18,7 @@ export interface ForumComment {
     blog: {
         name: string
         thumbnail_url: string | null
+        profile_image_url: string | null
     } | null
 }
 
@@ -32,6 +33,7 @@ export interface ForumPost {
     blog: {
         name: string
         thumbnail_url: string | null
+        profile_image_url: string | null
     } | null
     comment_count: number
     view_count: number
