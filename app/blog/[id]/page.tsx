@@ -115,7 +115,6 @@ export default function BlogPage() {
         .from('posts')
         .select('*', { count: 'exact', head: true })
         .eq('blog_id', blogId)
-        .eq('published', true)
 
       setPostCount(count || 0)
       setLoading(false)
