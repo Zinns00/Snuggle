@@ -12,9 +12,10 @@ const COMMENTS_PER_PAGE = 10
 
 interface CommentSectionProps {
     postId: string
+    onCountChange?: (count: number) => void
 }
 
-export default function CommentSection({ postId }: CommentSectionProps) {
+export default function CommentSection({ postId, onCountChange }: CommentSectionProps) {
     const { user, isLoading: isUserLoading } = useUserStore()
     const { selectedBlog, isLoading: isBlogLoading, hasFetched, fetchBlogs } = useBlogStore()
     const { showAlert } = useModal()
@@ -55,6 +56,11 @@ export default function CommentSection({ postId }: CommentSectionProps) {
     useEffect(() => {
         fetchComments()
     }, [fetchComments])
+
+    // totalCount 변경 시 부모에게 알림
+    useEffect(() => {
+        onCountChange?.(totalCount)
+    }, [totalCount, onCountChange])
 
     // 추가 댓글 로드
     const loadMore = useCallback(async () => {
