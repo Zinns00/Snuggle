@@ -2,16 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import { useUserStore } from '@/lib/store/useUserStore'
 import LoginModal from '@/components/auth/LoginModal'
 import UserMenu from '@/components/auth/UserMenu'
 import SearchInputWithSuggestions from '@/components/search/SearchInputWithSuggestions'
-
-const ThemeToggle = dynamic(() => import('@/components/common/ThemeToggle'), {
-    ssr: false,
-    loading: () => <div className="h-9 w-9 rounded-full bg-black/10 dark:bg-white/10" />,
-})
+import ThemeToggle from '@/components/common/ThemeToggle'
 
 export default function Header() {
     const pathname = usePathname()
