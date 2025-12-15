@@ -6,17 +6,10 @@ import { useUserStore } from '@/lib/store/useUserStore'
 import CommentForm from './CommentForm'
 import { useModal } from '@/components/common/Modal'
 
-interface BlogInfo {
-    id: string
-    name: string
-    thumbnail_url: string | null
-}
-
 interface CommentItemProps {
     comment: Comment
     replies: Comment[]
-    allComments: Comment[] // 모든 댓글 (대대댓글 처리를 위해 필요할 수 있음)
-    blogMap: Map<string, BlogInfo>
+    allComments: Comment[]
     onReply: (parentId: string, text: string) => Promise<void>
     onDelete: (commentId: string) => Promise<void>
 }
@@ -25,7 +18,6 @@ export default function CommentItem({
     comment,
     replies,
     allComments,
-    blogMap,
     onReply,
     onDelete
 }: CommentItemProps) {
@@ -37,10 +29,9 @@ export default function CommentItem({
 
     const isAuthor = user?.id === comment.user_id
 
-    // 댓글 작성자의 블로그 정보 가져오기
-    const authorBlog = blogMap.get(comment.user_id)
-    const displayName = authorBlog?.name || comment.profiles?.nickname || '알 수 없음'
-    const displayImage = authorBlog?.thumbnail_url || comment.profiles?.profile_image_url
+    // 댓글에 저장된 블로그 정보 사용, 없으면 프로필 정보로 폴백
+    const displayName = comment.blog?.name || comment.profiles?.nickname || '알 수 없음'
+    const displayImage = comment.blog?.thumbnail_url || comment.profiles?.profile_image_url
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString)
@@ -171,7 +162,6 @@ export default function CommentItem({
                             comment={reply}
                             replies={allComments.filter(c => c.parent_id === reply.id)}
                             allComments={allComments}
-                            blogMap={blogMap}
                             onReply={onReply}
                             onDelete={onDelete}
                         />

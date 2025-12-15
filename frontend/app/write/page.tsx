@@ -157,24 +157,24 @@ function WriteContent() {
 
     // 블로그가 없으면 블로그 생성 페이지로 이동
     useEffect(() => {
-        if (!isBlogLoading && !selectedBlog && user) {
+        if (!isBlogLoading && !blog && user) {
             router.push('/create-blog')
         }
-    }, [isBlogLoading, selectedBlog, user, router])
+    }, [isBlogLoading, blog, user, router])
 
     // 선택된 블로그 변경 시 카테고리 로딩
     useEffect(() => {
         const loadCategories = async () => {
-            if (!selectedBlog) return
+            if (!blog) return
             try {
-                const categoryData = await getCategories(selectedBlog.id)
+                const categoryData = await getCategories(blog.id)
                 setCategories(categoryData.map(c => ({ id: c.id, name: c.name })))
             } catch (err) {
                 console.error('Failed to load categories:', err)
             }
         }
         loadCategories()
-    }, [selectedBlog])
+    }, [blog])
 
     // 블로그 변경 시 카테고리 로드 및 블로그 없으면 리다이렉트
     useEffect(() => {
@@ -434,10 +434,10 @@ function WriteContent() {
 
     // 새 카테고리 추가
     const handleAddCategory = async (name: string): Promise<Category | null> => {
-        if (!selectedBlog) return null
+        if (!blog) return null
 
         try {
-            const data = await createCategory(selectedBlog.id, name)
+            const data = await createCategory(blog.id, name)
             const newCategory = { id: data.id, name: data.name }
             setCategories(prev => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name)))
             return newCategory
@@ -485,7 +485,7 @@ function WriteContent() {
         allowComments: boolean
         thumbnailUrl: string | null
     }) => {
-        if (!editor || !selectedBlog) return
+        if (!editor || !blog) return
 
         const content = editor.getHTML()
         setSaving(true)
@@ -506,7 +506,7 @@ function WriteContent() {
             } else {
                 // 생성
                 await createPost({
-                    blog_id: selectedBlog.id,
+                    blog_id: blog.id,
                     title: title.trim(),
                     content: content,
                     category_ids: categoryIds,
@@ -524,7 +524,7 @@ function WriteContent() {
             if (isEditMode) {
                 router.push(`/post/${editPostId}`)
             } else {
-                router.push(`/blog/${selectedBlog.id}`)
+                router.push(`/blog/${blog.id}`)
             }
 
         } catch (error) {
