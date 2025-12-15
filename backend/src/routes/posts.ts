@@ -22,6 +22,7 @@ router.get('/feed', authMiddleware, async (req: AuthenticatedRequest, res: Respo
   try {
     const user = req.user!
     const limit = parseInt(req.query.limit as string) || 14
+    const offset = parseInt(req.query.offset as string) || 0
 
     // 1. 내가 구독한 사람들의 ID (subed_id) 가져오기
     const { data: subscribed, error: subError } = await supabase
@@ -47,7 +48,7 @@ router.get('/feed', authMiddleware, async (req: AuthenticatedRequest, res: Respo
       `)
       .in('user_id', subscribedUserIds)
       .order('created_at', { ascending: false })
-      .limit(limit)
+      .range(offset, offset + limit - 1)
 
     if (postError) throw postError
 

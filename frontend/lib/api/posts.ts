@@ -243,14 +243,14 @@ export async function deletePost(id: string): Promise<void> {
 }
 
 // 내가 구독한 블로그의 게시글 (피드)
-export async function getFeedPosts(limit = 14): Promise<PostListItem[]> {
+export async function getFeedPosts(limit = 14, offset = 0): Promise<PostListItem[]> {
   const token = await getAuthToken()
 
   if (!token) {
     return []
   }
 
-  const response = await fetch(`${API_URL}/api/posts/feed?limit=${limit}`, {
+  const response = await fetch(`${API_URL}/api/posts/feed?limit=${limit}&offset=${offset}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
