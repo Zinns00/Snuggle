@@ -17,7 +17,8 @@ const SELECTED_BLOG_KEY = 'snuggle_selected_blog_id'
 
 export default function MyBlogSidebar() {
   const { user, isLoading: isUserLoading } = useUserStore()
-  const [blog, setBlog] = useState<Blog | null>(null)
+  const [blogs, setBlogs] = useState<Blog[]>([])
+  const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null)
   const [loading, setLoading] = useState(true)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -30,6 +31,7 @@ export default function MyBlogSidebar() {
       return
     }
 
+    const fetchBlog = async () => {
       const supabase = createClient()
 
       const { data, error } = await supabase
@@ -53,17 +55,6 @@ export default function MyBlogSidebar() {
     fetchBlog()
   }, [user, isUserLoading])
 
-  // 유저 로딩 중이거나 블로그 로딩 중
-  if (isUserLoading || loading) {
-    return (
-      <div className="animate-pulse rounded-2xl border border-black/10 p-6 dark:border-white/10">
-        <div className="h-5 w-20 rounded bg-black/10 dark:bg-white/10" />
-        <div className="mt-4 h-4 w-full rounded bg-black/10 dark:bg-white/10" />
-        <div className="mt-2 h-4 w-2/3 rounded bg-black/10 dark:bg-white/10" />
-      </div>
-    )
-  }
-
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -80,6 +71,17 @@ export default function MyBlogSidebar() {
     setSelectedBlog(blog)
     localStorage.setItem(SELECTED_BLOG_KEY, blog.id)
     setIsDropdownOpen(false)
+  }
+
+  // 유저 로딩 중이거나 블로그 로딩 중
+  if (isUserLoading || loading) {
+    return (
+      <div className="animate-pulse rounded-2xl border border-black/10 p-6 dark:border-white/10">
+        <div className="h-5 w-20 rounded bg-black/10 dark:bg-white/10" />
+        <div className="mt-4 h-4 w-full rounded bg-black/10 dark:bg-white/10" />
+        <div className="mt-2 h-4 w-2/3 rounded bg-black/10 dark:bg-white/10" />
+      </div>
+    )
   }
 
   // 비로그인 상태
