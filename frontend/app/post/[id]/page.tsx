@@ -16,6 +16,7 @@ import SubscriptionCard from '@/components/post/SubscriptionCard'
 // 게시글 컨텐츠 스타일
 import '@/styles/post-content.css'
 import '@/styles/highlight-theme.css'
+import CommentSection from '@/components/post/comments/CommentSection'
 
 export default function PostPage() {
     const params = useParams()
@@ -136,7 +137,7 @@ export default function PostPage() {
                 <main className="mx-auto max-w-3xl px-6 py-12">
                     {/* 비공개 표시 - is_private 체크 */}
                     {((postData as any).is_private) && (
-                        <div className="mb-6 flex items-center gap-2 rounded-lg bg-yellow-50 px-4 py-3 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-500">
+                        <div className="mb-6 flex items-center gap-2 rounded-lg px-4 py-3" style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', color: 'rgb(161, 98, 7)' }}>
                             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-4V8a3 3 0 00-3-3H6a3 3 0 00-3 3v1m12-1a3 3 0 013 3v6a3 3 0 01-3 3H6a3 3 0 01-3-3v-6" />
                             </svg>
@@ -212,6 +213,9 @@ export default function PostPage() {
                         thumbnailUrl={postData.blog.thumbnail_url}
                         profileImageUrl={postData.profile?.profile_image_url || null}
                     />
+
+                    {/* 댓글 섹션 */}
+                    <CommentSection postId={postId} />
 
                     {/* 하단 네비게이션 */}
                     <div className="mt-16 flex items-center justify-between border-t border-[var(--blog-border)] pt-8">
