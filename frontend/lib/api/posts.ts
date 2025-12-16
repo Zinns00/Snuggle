@@ -22,10 +22,12 @@ export interface Post {
   category_id: string | null
   published: boolean
   is_private?: boolean
-  is_allow_comment?: boolean // 추가
+  is_allow_comment?: boolean
   thumbnail_url: string | null
   created_at: string
   updated_at: string
+  view_count?: number
+  like_count?: number
 }
 
 export interface PostWithDetails extends Post {

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { useBlogStore } from '@/lib/store/useBlogStore'
+import { getVisitorCount } from '@/lib/api/blogs'
 import ProfileImage from '@/components/common/ProfileImage'
 import KakaoLoginButton from '@/components/auth/KakaoLoginButton'
 
@@ -10,6 +11,7 @@ export default function MyBlogSidebar() {
   const { user, isLoading: isUserLoading } = useUserStore()
   const { blogs, selectedBlog, isLoading: isBlogLoading, fetchBlogs, selectBlog } = useBlogStore()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [visitorCount, setVisitorCount] = useState(0)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -28,6 +30,15 @@ export default function MyBlogSidebar() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // 방문자 수 가져오기
+  useEffect(() => {
+    if (selectedBlog) {
+      getVisitorCount(selectedBlog.id).then(data => {
+        setVisitorCount(data.today)
+      })
+    }
+  }, [selectedBlog])
 
   const handleSelectBlog = (blog: typeof selectedBlog) => {
     if (blog) {
@@ -189,7 +200,7 @@ export default function MyBlogSidebar() {
             <div className="w-px h-8 bg-black/10 dark:bg-white/10" />
             <div className="text-center flex-1">
               <div className="text-lg font-bold tabular-nums text-black dark:text-white">
-                0
+                {visitorCount.toLocaleString()}
               </div>
               <div className="mt-0.5 text-xs text-black/40 dark:text-white/40">방문자</div>
             </div>
